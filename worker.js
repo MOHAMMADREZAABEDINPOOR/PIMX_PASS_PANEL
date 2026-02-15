@@ -1,10 +1,12 @@
-﻿    // CFnew - Terminal v2.9.3
+    // CFnew - Terminal v2.9.3
     // Version: v2.9.3
     import { connect } from 'cloudflare:sockets';
 
     // Optional branding (set in Workers Variables as BRAND/brand/NAME/name)
     let panelBrand = 'PIMX Panel';
-    let at = '351c9981-04b6-4103-aa4b-864aa9c91469';
+    // Worker UUID should come from Cloudflare Variables (u/U/uuid/UUID).
+    // Keep empty by default to avoid hardcoded secrets in source.
+    let at = '';
     let fallbackAddress = '';
     let socks5Config = '';
     let customPreferredIPs = [];
@@ -335,7 +337,9 @@
                     globalThis.brand || globalThis.BRAND || globalThis.name || globalThis.NAME;
                 panelBrand = String(brandVar || panelBrand || '').trim() || panelBrand;
 
-                const uuidVar = (env && (env.u || env.U)) || globalThis.u || globalThis.U;
+                const uuidVar =
+                    (env && (env.u || env.U || env.uuid || env.UUID)) ||
+                    globalThis.u || globalThis.U || globalThis.uuid || globalThis.UUID;
                 at = String(uuidVar || at).toLowerCase();
 
                 const dVar = (env && (env.d || env.D)) || globalThis.d || globalThis.D;
@@ -515,6 +519,15 @@
 
                 const url = new URL(request.url);
 
+                // Dashboard-only fallback: if UUID variable is not set, accept UUID from URL path.
+                // This keeps the worker usable when code is pasted directly in Cloudflare without CLI vars.
+                if (!isValidFormat(at) && (!cp || !cp.trim())) {
+                    const pathCandidate = url.pathname.replace(/\/$/, '').replace('/sub', '').substring(1).toLowerCase();
+                    if (isValidFormat(pathCandidate)) {
+                        at = pathCandidate;
+                    }
+                }
+
                 if (url.pathname === '/favicon.ico') {
                     return new Response(null, {
                         status: 204,
@@ -528,9 +541,13 @@
                         cp,
                         env_u: env && env.u,
                         env_U: env && env.U,
+                        env_uuid: env && env.uuid,
+                        env_UUID: env && env.UUID,
                         global_u: globalThis.u,
                         global_U: globalThis.U,
-                        global_vars: Object.keys(globalThis).filter(k => ['u', 'U', 'BRAND', 'brand', 'NAME', 'name', 'd', 'D'].includes(k))
+                        global_uuid: globalThis.uuid,
+                        global_UUID: globalThis.UUID,
+                        global_vars: Object.keys(globalThis).filter(k => ['u', 'U', 'uuid', 'UUID', 'BRAND', 'brand', 'NAME', 'name', 'd', 'D'].includes(k))
                     }), { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
                 }
 
@@ -703,8 +720,16 @@
                         const customHomepage = getConfigValue('homepage', env.homepage || env.HOMEPAGE);
                         if (customHomepage && customHomepage.trim()) {
                             try {
+                                const homepageUrl = new URL(customHomepage.trim());
+                                const sameHost = homepageUrl.hostname === url.hostname;
+                                const sameRootPath = (homepageUrl.pathname || '/') === '/';
+                                // Prevent recursive self-fetch loops (common source of 1101 on production).
+                                if (sameHost && sameRootPath) {
+                                    throw new Error('Custom homepage points to this Worker root URL');
+                                }
+
                                 // Fetch custom homepage content
-                                const homepageResponse = await fetch(customHomepage.trim(), {
+                                const homepageResponse = await fetch(homepageUrl.toString(), {
                                     method: 'GET',
                                     headers: {
                                         'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0',
@@ -766,7 +791,7 @@
                                     subtitle: 'Enter your UID to open the panel',
                                     uidLabel: 'UID (UUID)',
                                     uidPlaceholder: 'e.g. 92f0edc2-81e2-4712-816d-bc72d64794e3',
-                                    uidHint: 'This is the UUID you configured as variable U.',
+                                    uidHint: 'This is the UUID you configured in Worker Variables (u/U/uuid/UUID).',
                                     pathLabel: 'Path',
                                     pathPlaceholder: 'e.g. mypath or /mypath',
                                     pathHint: 'This Worker is configured to use a custom path (D).',
@@ -785,7 +810,7 @@
                                     subtitle: 'برای ورود به پنل، UID را وارد کنید',
                                     uidLabel: 'UID (UUID)',
                                     uidPlaceholder: 'مثال: 92f0edc2-81e2-4712-816d-bc72d64794e3',
-                                    uidHint: 'این همان UUID است که در متغیر U تنظیم کرده‌اید.',
+                                    uidHint: 'این همان UUID است که در متغیرهای Worker (u/U/uuid/UUID) تنظیم کرده‌اید.',
                                     pathLabel: 'مسیر',
                                     pathPlaceholder: 'مثال: mypath یا /mypath',
                                     pathHint: 'این Worker روی حالت مسیر سفارشی (D) تنظیم شده است.',
@@ -1006,7 +1031,7 @@
                             if (user === at) {
                                 return await handleSubscriptionPage(request, user);
                             } else {
-                                return new Response(JSON.stringify({ error: 'Invalid UUID. Note: the variable name is `u`, not `uuid`.' }), { 
+                                return new Response(JSON.stringify({ error: 'Invalid UUID. Configure one of: `u`, `U`, `uuid`, `UUID`.' }), { 
                                     status: 403,
                                     headers: { 'Content-Type': 'application/json' }
                                 });
@@ -1030,7 +1055,7 @@
                             }
                         }
                     }
-                    if (url.pathname.toLowerCase().includes(`/${subPath}`)) {
+                    if (subPath && url.pathname.toLowerCase().includes(`/${subPath}`)) {
                         return await handleSubscriptionRequest(request, at);
                     }
                 }
