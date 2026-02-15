@@ -1,0 +1,6 @@
+{
+  // Cloudflare Wrangler config for local dev
+  "name": "pimxpasscloud",
+  "compatibility_date": "2026-02-15",
+  "main": "worker.js"
+}
