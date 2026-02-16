@@ -1,12 +1,10 @@
-    // CFnew - Terminal v2.9.3
+﻿    // CFnew - Terminal v2.9.3
     // Version: v2.9.3
     import { connect } from 'cloudflare:sockets';
 
     // Optional branding (set in Workers Variables as BRAND/brand/NAME/name)
-    let panelBrand = 'PIMX Panel';
-    // Worker UUID should come from Cloudflare Variables (u/U/uuid/UUID).
-    // Keep empty by default to avoid hardcoded secrets in source.
-    let at = '';
+    let panelBrand = 'PIMXPASS PANEL';
+    let at = '351c9981-04b6-4103-aa4b-864aa9c91469';
     let fallbackAddress = '';
     let socks5Config = '';
     let customPreferredIPs = [];
@@ -43,32 +41,89 @@
     let kvStore = null;
     let kvConfig = {};
 
-    const regionMapping = {
-        'US': ['🇺🇸 United States', 'US', 'United States'],
-        'SG': ['🇸🇬 Singapore', 'SG', 'Singapore'],
-        'JP': ['🇯🇵 Japan', 'JP', 'Japan'],
-        'KR': ['🇰🇷 South Korea', 'KR', 'South Korea'],
-        'DE': ['🇩🇪 Germany', 'DE', 'Germany'],
-        'SE': ['🇸🇪 Sweden', 'SE', 'Sweden'],
-        'NL': ['🇳🇱 Netherlands', 'NL', 'Netherlands'],
-        'FI': ['🇫🇮 Finland', 'FI', 'Finland'],
-        'GB': ['🇬🇧 United Kingdom', 'GB', 'United Kingdom'],
-        'Oracle': ['Oracle', 'Oracle'],
-        'DigitalOcean': ['DigitalOcean', 'DigitalOcean'],
-        'Vultr': ['Vultr', 'Vultr'],
-        'Multacom': ['Multacom', 'Multacom']
+    const REGION_CODES = [
+        'US', 'CA', 'MX', 'BR', 'AR', 'CL',
+        'GB', 'IE', 'DE', 'FR', 'NL', 'BE', 'SE', 'NO', 'FI', 'CH', 'IT', 'ES', 'PL', 'TR',
+        'AE', 'SA', 'IN', 'PK', 'BD', 'RU', 'KZ',
+        'SG', 'JP', 'KR', 'HK', 'TW', 'TH', 'MY', 'AU', 'NZ'
+    ];
+    const PROVIDER_REGION_CODES = ['Oracle', 'DigitalOcean', 'Vultr', 'Multacom'];
+
+    const regionRouteMap = {
+        US: 'US', CA: 'US', MX: 'US', BR: 'US', AR: 'US', CL: 'US',
+        GB: 'GB', IE: 'GB', DE: 'DE', FR: 'DE', NL: 'NL', BE: 'NL', SE: 'SE', NO: 'SE', FI: 'FI', CH: 'DE', IT: 'DE', ES: 'DE', PL: 'DE', TR: 'DE',
+        AE: 'SG', SA: 'SG', IN: 'SG', PK: 'SG', BD: 'SG', RU: 'DE', KZ: 'DE',
+        SG: 'SG', JP: 'JP', KR: 'KR', HK: 'SG', TW: 'JP', TH: 'SG', MY: 'SG', AU: 'SG', NZ: 'SG'
+    };
+
+    const regionLabelEn = {
+        US: '🇺🇸 United States',
+        CA: '🇨🇦 Canada',
+        MX: '🇲🇽 Mexico',
+        BR: '🇧🇷 Brazil',
+        AR: '🇦🇷 Argentina',
+        CL: '🇨🇱 Chile',
+        GB: '🇬🇧 United Kingdom',
+        IE: '🇮🇪 Ireland',
+        DE: '🇩🇪 Germany',
+        FR: '🇫🇷 France',
+        NL: '🇳🇱 Netherlands',
+        BE: '🇧🇪 Belgium',
+        SE: '🇸🇪 Sweden',
+        NO: '🇳🇴 Norway',
+        FI: '🇫🇮 Finland',
+        CH: '🇨🇭 Switzerland',
+        IT: '🇮🇹 Italy',
+        ES: '🇪🇸 Spain',
+        PL: '🇵🇱 Poland',
+        TR: '🇹🇷 Turkey',
+        AE: '🇦🇪 UAE',
+        SA: '🇸🇦 Saudi Arabia',
+        IN: '🇮🇳 India',
+        PK: '🇵🇰 Pakistan',
+        BD: '🇧🇩 Bangladesh',
+        RU: '🇷🇺 Russia',
+        KZ: '🇰🇿 Kazakhstan',
+        SG: '🇸🇬 Singapore',
+        JP: '🇯🇵 Japan',
+        KR: '🇰🇷 South Korea',
+        HK: '🇭🇰 Hong Kong',
+        TW: '🇹🇼 Taiwan',
+        TH: '🇹🇭 Thailand',
+        MY: '🇲🇾 Malaysia',
+        AU: '🇦🇺 Australia',
+        NZ: '🇳🇿 New Zealand'
+    };
+
+    const regionMapping = Object.fromEntries(
+        [
+            ...REGION_CODES.map((code) => [code, [regionLabelEn[code], code, regionLabelEn[code].replace(/^[^\s]+\s/, '')]]),
+            ['Oracle', ['Oracle', 'Oracle']],
+            ['DigitalOcean', ['DigitalOcean', 'DigitalOcean']],
+            ['Vultr', ['Vultr', 'Vultr']],
+            ['Multacom', ['Multacom', 'Multacom']]
+        ]
+    );
+
+    const hubDomainMap = {
+        US: 'ProxyIP.US.CMLiussss.net',
+        SG: 'ProxyIP.SG.CMLiussss.net',
+        JP: 'ProxyIP.JP.CMLiussss.net',
+        KR: 'ProxyIP.KR.CMLiussss.net',
+        DE: 'ProxyIP.DE.CMLiussss.net',
+        SE: 'ProxyIP.SE.CMLiussss.net',
+        NL: 'ProxyIP.NL.CMLiussss.net',
+        FI: 'ProxyIP.FI.CMLiussss.net',
+        GB: 'ProxyIP.GB.CMLiussss.net'
     };
 
     let backupIPs = [
-        { domain: 'ProxyIP.US.CMLiussss.net', region: 'US', regionCode: 'US', port: 443 },
-        { domain: 'ProxyIP.SG.CMLiussss.net', region: 'SG', regionCode: 'SG', port: 443 },
-        { domain: 'ProxyIP.JP.CMLiussss.net', region: 'JP', regionCode: 'JP', port: 443 },
-        { domain: 'ProxyIP.KR.CMLiussss.net', region: 'KR', regionCode: 'KR', port: 443 },
-        { domain: 'ProxyIP.DE.CMLiussss.net', region: 'DE', regionCode: 'DE', port: 443 },
-        { domain: 'ProxyIP.SE.CMLiussss.net', region: 'SE', regionCode: 'SE', port: 443 },
-        { domain: 'ProxyIP.NL.CMLiussss.net', region: 'NL', regionCode: 'NL', port: 443 },
-        { domain: 'ProxyIP.FI.CMLiussss.net', region: 'FI', regionCode: 'FI', port: 443 },
-        { domain: 'ProxyIP.GB.CMLiussss.net', region: 'GB', regionCode: 'GB', port: 443 },
+        ...REGION_CODES.map((code) => ({
+            domain: hubDomainMap[regionRouteMap[code] || 'SG'],
+            region: code,
+            regionCode: code,
+            port: 443
+        })),
         { domain: 'ProxyIP.Oracle.cmliussss.net', region: 'Oracle', regionCode: 'Oracle', port: 443 },
         { domain: 'ProxyIP.DigitalOcean.CMLiussss.net', region: 'DigitalOcean', regionCode: 'DigitalOcean', port: 443 },
         { domain: 'ProxyIP.Vultr.CMLiussss.net', region: 'Vultr', regionCode: 'Vultr', port: 443 },
@@ -203,9 +258,13 @@
                 const countryToRegion = {
                     'US': 'US', 'SG': 'SG', 'JP': 'JP', 'KR': 'KR',
                     'DE': 'DE', 'SE': 'SE', 'NL': 'NL', 'FI': 'FI', 'GB': 'GB',
-                    'CN': 'SG', 'TW': 'JP', 'AU': 'SG', 'CA': 'US',
-                    'FR': 'DE', 'IT': 'DE', 'ES': 'DE', 'CH': 'DE',
-                    'AT': 'DE', 'BE': 'NL', 'DK': 'SE', 'NO': 'SE', 'IE': 'GB'
+                    'CA': 'CA', 'MX': 'MX', 'BR': 'BR', 'AR': 'AR', 'CL': 'CL',
+                    'IE': 'IE', 'FR': 'FR', 'BE': 'BE', 'NO': 'NO', 'CH': 'CH',
+                    'IT': 'IT', 'ES': 'ES', 'PL': 'PL', 'TR': 'TR',
+                    'AE': 'AE', 'SA': 'SA', 'IN': 'IN', 'PK': 'PK', 'BD': 'BD',
+                    'RU': 'RU', 'KZ': 'KZ',
+                    'HK': 'HK', 'TW': 'TW', 'TH': 'TH', 'MY': 'MY', 'AU': 'AU', 'NZ': 'NZ',
+                    'CN': 'SG', 'AT': 'DE', 'DK': 'SE'
                 };
                 
                 if (countryToRegion[cfCountry]) {
@@ -261,26 +320,36 @@
     }
 
     function getNearbyRegions(region) {
-        const nearbyMap = {
-            'US': ['SG', 'JP', 'KR'], 
-            'SG': ['JP', 'KR', 'US'], 
-            'JP': ['SG', 'KR', 'US'], 
-            'KR': ['JP', 'SG', 'US'], 
-            'DE': ['NL', 'GB', 'SE', 'FI'], 
-            'SE': ['DE', 'NL', 'FI', 'GB'], 
-            'NL': ['DE', 'GB', 'SE', 'FI'], 
-            'FI': ['SE', 'DE', 'NL', 'GB'], 
-            'GB': ['DE', 'NL', 'SE', 'FI']  
+        const nearbyHubMap = {
+            US: ['GB', 'DE', 'SG'],
+            SG: ['JP', 'KR', 'US'],
+            JP: ['KR', 'SG', 'US'],
+            KR: ['JP', 'SG', 'US'],
+            DE: ['NL', 'GB', 'SE', 'FI'],
+            SE: ['FI', 'DE', 'NL', 'GB'],
+            NL: ['DE', 'GB', 'SE', 'FI'],
+            FI: ['SE', 'DE', 'NL', 'GB'],
+            GB: ['DE', 'NL', 'SE', 'FI']
         };
-        
-        return nearbyMap[region] || [];
+        const currentHub = regionRouteMap[region] || region;
+        const nearbyHubs = nearbyHubMap[currentHub] || [];
+        const sameHub = REGION_CODES.filter((code) => code !== region && (regionRouteMap[code] || code) === currentHub);
+        const nearby = REGION_CODES.filter((code) => {
+            if (code === region) return false;
+            const codeHub = regionRouteMap[code] || code;
+            return nearbyHubs.includes(codeHub) && codeHub !== currentHub;
+        });
+        return [...sameHub, ...nearby];
     }
 
     function getAllRegionsByPriority(region) {
         const nearbyRegions = getNearbyRegions(region);
-        const allRegions = ['US', 'SG', 'JP', 'KR', 'DE', 'SE', 'NL', 'FI', 'GB'];
-        
-        return [region, ...nearbyRegions, ...allRegions.filter(r => r !== region && !nearbyRegions.includes(r))];
+        return [
+            region,
+            ...nearbyRegions,
+            ...REGION_CODES.filter((r) => r !== region && !nearbyRegions.includes(r)),
+            ...PROVIDER_REGION_CODES
+        ];
     }
 
     function getSmartRegionSelection(workerRegion, availableIPs) {
@@ -337,9 +406,7 @@
                     globalThis.brand || globalThis.BRAND || globalThis.name || globalThis.NAME;
                 panelBrand = String(brandVar || panelBrand || '').trim() || panelBrand;
 
-                const uuidVar =
-                    (env && (env.u || env.U || env.uuid || env.UUID)) ||
-                    globalThis.u || globalThis.U || globalThis.uuid || globalThis.UUID;
+                const uuidVar = (env && (env.u || env.U)) || globalThis.u || globalThis.U;
                 at = String(uuidVar || at).toLowerCase();
 
                 const dVar = (env && (env.d || env.D)) || globalThis.d || globalThis.D;
@@ -519,15 +586,6 @@
 
                 const url = new URL(request.url);
 
-                // Dashboard-only fallback: if UUID variable is not set, accept UUID from URL path.
-                // This keeps the worker usable when code is pasted directly in Cloudflare without CLI vars.
-                if (!isValidFormat(at) && (!cp || !cp.trim())) {
-                    const pathCandidate = url.pathname.replace(/\/$/, '').replace('/sub', '').substring(1).toLowerCase();
-                    if (isValidFormat(pathCandidate)) {
-                        at = pathCandidate;
-                    }
-                }
-
                 if (url.pathname === '/favicon.ico') {
                     return new Response(null, {
                         status: 204,
@@ -541,13 +599,9 @@
                         cp,
                         env_u: env && env.u,
                         env_U: env && env.U,
-                        env_uuid: env && env.uuid,
-                        env_UUID: env && env.UUID,
                         global_u: globalThis.u,
                         global_U: globalThis.U,
-                        global_uuid: globalThis.uuid,
-                        global_UUID: globalThis.UUID,
-                        global_vars: Object.keys(globalThis).filter(k => ['u', 'U', 'uuid', 'UUID', 'BRAND', 'brand', 'NAME', 'name', 'd', 'D'].includes(k))
+                        global_vars: Object.keys(globalThis).filter(k => ['u', 'U', 'BRAND', 'brand', 'NAME', 'name', 'd', 'D'].includes(k))
                     }), { headers: { 'Content-Type': 'application/json; charset=utf-8' } });
                 }
 
@@ -720,16 +774,8 @@
                         const customHomepage = getConfigValue('homepage', env.homepage || env.HOMEPAGE);
                         if (customHomepage && customHomepage.trim()) {
                             try {
-                                const homepageUrl = new URL(customHomepage.trim());
-                                const sameHost = homepageUrl.hostname === url.hostname;
-                                const sameRootPath = (homepageUrl.pathname || '/') === '/';
-                                // Prevent recursive self-fetch loops (common source of 1101 on production).
-                                if (sameHost && sameRootPath) {
-                                    throw new Error('Custom homepage points to this Worker root URL');
-                                }
-
                                 // Fetch custom homepage content
-                                const homepageResponse = await fetch(homepageUrl.toString(), {
+                                const homepageResponse = await fetch(customHomepage.trim(), {
                                     method: 'GET',
                                     headers: {
                                         'User-Agent': request.headers.get('User-Agent') || 'Mozilla/5.0',
@@ -791,7 +837,7 @@
                                     subtitle: 'Enter your UID to open the panel',
                                     uidLabel: 'UID (UUID)',
                                     uidPlaceholder: 'e.g. 92f0edc2-81e2-4712-816d-bc72d64794e3',
-                                    uidHint: 'This is the UUID you configured in Worker Variables (u/U/uuid/UUID).',
+                                    uidHint: 'This is the UUID you configured as variable U.',
                                     pathLabel: 'Path',
                                     pathPlaceholder: 'e.g. mypath or /mypath',
                                     pathHint: 'This Worker is configured to use a custom path (D).',
@@ -810,7 +856,7 @@
                                     subtitle: 'برای ورود به پنل، UID را وارد کنید',
                                     uidLabel: 'UID (UUID)',
                                     uidPlaceholder: 'مثال: 92f0edc2-81e2-4712-816d-bc72d64794e3',
-                                    uidHint: 'این همان UUID است که در متغیرهای Worker (u/U/uuid/UUID) تنظیم کرده‌اید.',
+                                    uidHint: 'این همان UUID است که در متغیر U تنظیم کرده‌اید.',
                                     pathLabel: 'مسیر',
                                     pathPlaceholder: 'مثال: mypath یا /mypath',
                                     pathHint: 'این Worker روی حالت مسیر سفارشی (D) تنظیم شده است.',
@@ -910,11 +956,12 @@
           <div class="links" style="display:grid;gap:10px">
             <a href="https://t.me/PIMX_PASS" target="_blank" rel="noreferrer"><span>${t.telegramChannel}</span><small>@PIMX_PASS</small></a>
             <a href="https://t.me/PIMX_PASS_BOT" target="_blank" rel="noreferrer"><span>${t.serverBot}</span><small>@PIMX_PASS_BOT</small></a>
-            <a href="https://t.me/PIMX_PLAY_BOT" target="_blank" rel="noreferrer"><span>${t.androidBot}</span><small>@PIMX_PLAY_BOT</small></a>
+            <a href="https://t.me/PIMX_SONIC_BOT" target="_blank" rel="noreferrer"><span>${t.androidBot}</span><small>@PIMX_SONIC_BOT</small></a>
+            <a href="https://t.me/PIMX_PLAY_BOT" target="_blank" rel="noreferrer"><span>${isFarsi ? 'بات موزیک' : 'Music Bot'}</span><small>@PIMX_PLAY_BOT</small></a>
             <a href="https://www.youtube.com/@PIMX_PLAY_BOT" target="_blank" rel="noreferrer"><span>${t.youtube}</span><small>@PIMX_PLAY_BOT</small></a>
             <a href="https://x.com/pimxpass" target="_blank" rel="noreferrer"><span>X</span><small>@pimxpass</small></a>
           </div>
-          <p class="hint" style="margin-top:14px">${isFarsi ? 'بات سرور: V2Ray / NPV Tunnel / HA Tunnel Plus / OpenVPN / HTTP Injector / HTTP Custom + پروکسی تلگرام.' : 'Server Bot: V2Ray / NPV Tunnel / HA Tunnel Plus / OpenVPN / HTTP Injector / HTTP Custom + Telegram proxy.'}</p>
+          <p class="hint" style="margin-top:14px">${isFarsi ? 'بات سرور: V2Ray / NPV Tunnel / HA Tunnel Plus / OpenVPN / HTTP Injector / HTTP Custom + پروکسی تلگرام • اندروید: @PIMX_SONIC_BOT • موزیک: @PIMX_PLAY_BOT' : 'Server Bot: V2Ray / NPV Tunnel / HA Tunnel Plus / OpenVPN / HTTP Injector / HTTP Custom + Telegram proxy • Android: @PIMX_SONIC_BOT • Music bot: @PIMX_PLAY_BOT'}</p>
         </div></div>
       </div>
     </div>
@@ -976,7 +1023,8 @@
           var lang = langSel.value;
           localStorage.setItem('preferredLanguage', lang);
           setCookie('preferredLanguage', lang);
-          window.location.reload();
+          document.documentElement.setAttribute('lang', lang === 'fa' ? 'fa-IR' : 'en-US');
+          document.documentElement.setAttribute('dir', lang === 'fa' ? 'rtl' : 'ltr');
         });
 
         var savedLang = localStorage.getItem('preferredLanguage') || getCookie('preferredLanguage');
@@ -1031,7 +1079,7 @@
                             if (user === at) {
                                 return await handleSubscriptionPage(request, user);
                             } else {
-                                return new Response(JSON.stringify({ error: 'Invalid UUID. Configure one of: `u`, `U`, `uuid`, `UUID`.' }), { 
+                                return new Response(JSON.stringify({ error: 'Invalid UUID. Note: the variable name is `u`, not `uuid`.' }), { 
                                     status: 403,
                                     headers: { 'Content-Type': 'application/json' }
                                 });
@@ -1055,7 +1103,7 @@
                             }
                         }
                     }
-                    if (subPath && url.pathname.toLowerCase().includes(`/${subPath}`)) {
+                    if (url.pathname.toLowerCase().includes(`/${subPath}`)) {
                         return await handleSubscriptionRequest(request, at);
                     }
                 }
@@ -2530,6 +2578,50 @@
             });
             
             const t = translations[isFarsi ? 'fa' : 'en'];
+            const regionLabelFa = {
+                US: '🇺🇸 آمریکا',
+                CA: '🇨🇦 کانادا',
+                MX: '🇲🇽 مکزیک',
+                BR: '🇧🇷 برزیل',
+                AR: '🇦🇷 آرژانتین',
+                CL: '🇨🇱 شیلی',
+                GB: '🇬🇧 بریتانیا',
+                IE: '🇮🇪 ایرلند',
+                DE: '🇩🇪 آلمان',
+                FR: '🇫🇷 فرانسه',
+                NL: '🇳🇱 هلند',
+                BE: '🇧🇪 بلژیک',
+                SE: '🇸🇪 سوئد',
+                NO: '🇳🇴 نروژ',
+                FI: '🇫🇮 فنلاند',
+                CH: '🇨🇭 سوئیس',
+                IT: '🇮🇹 ایتالیا',
+                ES: '🇪🇸 اسپانیا',
+                PL: '🇵🇱 لهستان',
+                TR: '🇹🇷 ترکیه',
+                AE: '🇦🇪 امارات',
+                SA: '🇸🇦 عربستان',
+                IN: '🇮🇳 هند',
+                PK: '🇵🇰 پاکستان',
+                BD: '🇧🇩 بنگلادش',
+                RU: '🇷🇺 روسیه',
+                KZ: '🇰🇿 قزاقستان',
+                SG: '🇸🇬 سنگاپور',
+                JP: '🇯🇵 ژاپن',
+                KR: '🇰🇷 کره جنوبی',
+                HK: '🇭🇰 هنگ‌کنگ',
+                TW: '🇹🇼 تایوان',
+                TH: '🇹🇭 تایلند',
+                MY: '🇲🇾 مالزی',
+                AU: '🇦🇺 استرالیا',
+                NZ: '🇳🇿 نیوزیلند'
+            };
+            const regionOptionsHtml = REGION_CODES
+                .map((code) => {
+                    const label = isFarsi ? (regionLabelFa[code] || regionLabelEn[code] || code) : (regionLabelEn[code] || code);
+                    return `<option value="${code}">${label}</option>`;
+                })
+                .join('');
         
         const pageHtml = `<!DOCTYPE html>
         <html lang="${langAttr}" dir="${isFarsi ? 'rtl' : 'ltr'}">
@@ -3273,6 +3365,285 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+
+            :root {
+                --bg: #060c16;
+                --bg-soft: #0c1627;
+                --panel: rgba(14, 27, 46, 0.78);
+                --panel-2: rgba(22, 40, 68, 0.72);
+                --text: #e7efff;
+                --muted: #b5c4e1;
+                --border: rgba(118, 170, 255, 0.3);
+                --glow: 0 22px 48px rgba(8, 20, 41, 0.45);
+            }
+            :root[data-theme='light'] {
+                --bg: #f3f8ff;
+                --bg-soft: #eaf1fb;
+                --panel: rgba(255, 255, 255, 0.9);
+                --panel-2: rgba(244, 249, 255, 0.95);
+                --text: #13233e;
+                --muted: #38537d;
+                --border: rgba(37, 86, 163, 0.2);
+                --glow: 0 18px 36px rgba(43, 85, 145, 0.14);
+            }
+            body {
+                font-family: ${isFarsi ? "'Vazirmatn','Sora',sans-serif" : "'Sora','Vazirmatn',sans-serif"} !important;
+                color: var(--text) !important;
+                background:
+                    radial-gradient(1000px 700px at 12% -10%, rgba(0, 180, 255, 0.2), transparent 65%),
+                    radial-gradient(900px 600px at 85% 10%, rgba(255, 111, 145, 0.16), transparent 60%),
+                    linear-gradient(155deg, var(--bg), var(--bg-soft)) !important;
+            }
+            .matrix-bg,
+            .matrix-rain,
+            .matrix-code-rain {
+                display: none !important;
+            }
+            .topbar,
+            .card,
+            .subscription-url,
+            #kvStatus,
+            #currentConfig,
+            #pathTypeInfo,
+            #statusMessage,
+            #systemStatus {
+                border: 1px solid var(--border) !important;
+                background: var(--panel) !important;
+                color: var(--text) !important;
+                box-shadow: var(--glow) !important;
+                text-shadow: none !important;
+                border-radius: 18px !important;
+                backdrop-filter: blur(10px);
+            }
+            .header { margin-bottom: 24px !important; }
+            .title {
+                text-shadow: 0 10px 36px rgba(0, 180, 255, 0.22) !important;
+                color: var(--text) !important;
+                font-size: clamp(2rem, 5vw, 3.2rem) !important;
+                letter-spacing: 0.02em;
+            }
+            .subtitle,
+            .hero-hint,
+            .card-help {
+                color: var(--muted) !important;
+                text-shadow: none !important;
+            }
+            .card-title { color: var(--text) !important; text-shadow: none !important; }
+            .client-grid { gap: 10px !important; }
+            .client-btn,
+            button[type='submit'],
+            button[type='button'],
+            .utility-links a {
+                border-radius: 14px !important;
+                border: 1px solid var(--border) !important;
+                background: linear-gradient(120deg, rgba(0, 180, 255, 0.16), rgba(255, 111, 145, 0.14)) !important;
+                color: var(--text) !important;
+                text-shadow: none !important;
+                transition: transform .25s ease, box-shadow .25s ease, border-color .25s ease !important;
+            }
+            .client-btn:hover,
+            button[type='submit']:hover,
+            button[type='button']:hover,
+            .utility-links a:hover {
+                transform: translateY(-2px);
+                border-color: rgba(255, 179, 71, 0.66) !important;
+                box-shadow: 0 14px 24px rgba(0, 180, 255, 0.2);
+            }
+            select,
+            input[type='text'],
+            input[type='number'],
+            textarea {
+                background: var(--panel-2) !important;
+                color: var(--text) !important;
+                border: 1px solid var(--border) !important;
+                border-radius: 12px !important;
+                text-shadow: none !important;
+            }
+            small,
+            label,
+            #systemStatus [id],
+            #currentConfig {
+                color: var(--muted) !important;
+                text-shadow: none !important;
+            }
+            .card [style*="#00ff00"],
+            .card [style*="#00aa00"],
+            .card [style*="0, 255, 0"],
+            .card [style*="0, 170, 0"] {
+                color: var(--muted) !important;
+                border-color: var(--border) !important;
+                text-shadow: none !important;
+                box-shadow: none !important;
+            }
+            .card [style*="0, 20, 0"],
+            .card [style*="0, 40, 0"] {
+                background: var(--panel-2) !important;
+            }
+            .social-link {
+                border-radius: 16px !important;
+                border: 1px solid var(--border) !important;
+                background: linear-gradient(130deg, rgba(0, 180, 255, 0.12), rgba(255, 179, 71, 0.12)) !important;
+            }
+            .social-text strong, .social-text small { color: var(--text) !important; }
+            .social-icon { color: var(--text) !important; }
+            .social-link-x {
+                background: linear-gradient(130deg, rgba(255, 111, 145, 0.16), rgba(0, 180, 255, 0.14)) !important;
+            }
+            .wizard-steps .step-btn[aria-current='true'] {
+                border-color: rgba(255, 179, 71, 0.78) !important;
+                box-shadow: 0 12px 26px rgba(255, 179, 71, 0.2);
+                transform: translateY(-2px);
+            }
+            label > input[type='checkbox'] {
+                position: absolute !important;
+                opacity: 0 !important;
+                width: 0 !important;
+                height: 0 !important;
+            }
+            label > input[type='checkbox'] + span {
+                display: inline-flex !important;
+                align-items: center;
+                justify-content: center;
+                min-height: 38px;
+                padding: 8px 12px;
+                border: 1px solid var(--border);
+                border-radius: 12px;
+                background: rgba(255, 255, 255, 0.03);
+                color: var(--muted) !important;
+                transition: all .24s ease;
+            }
+            label > input[type='checkbox']:checked + span {
+                border-color: rgba(255, 179, 71, 0.7);
+                background: linear-gradient(120deg, rgba(0, 180, 255, 0.18), rgba(255, 111, 145, 0.17));
+                color: var(--text) !important;
+                box-shadow: 0 10px 20px rgba(0, 180, 255, 0.16);
+            }
+            .op-card-grid {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .op-card-btn {
+                border: 1px solid var(--border);
+                border-radius: 14px;
+                background: rgba(255, 255, 255, 0.02);
+                color: var(--muted);
+                padding: 12px 10px;
+                cursor: pointer;
+                transition: all .25s ease;
+            }
+            .op-card-btn.active {
+                color: var(--text);
+                border-color: rgba(255, 179, 71, 0.76);
+                background: linear-gradient(120deg, rgba(0, 180, 255, 0.2), rgba(255, 111, 145, 0.2));
+                box-shadow: 0 12px 22px rgba(11, 89, 166, 0.22);
+            }
+            #toastWrap {
+                position: fixed;
+                z-index: 9999;
+                inset-inline-end: 18px;
+                bottom: 18px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .toast-item {
+                min-width: 240px;
+                max-width: min(88vw, 430px);
+                padding: 11px 12px;
+                border-radius: 12px;
+                border: 1px solid var(--border);
+                background: var(--panel);
+                color: var(--text);
+                box-shadow: var(--glow);
+                animation: toast-in .28s ease;
+            }
+            .toast-item.success { border-color: rgba(111, 231, 178, 0.7); }
+            .toast-item.error { border-color: rgba(255, 138, 128, 0.7); }
+            @keyframes toast-in {
+                from { opacity: 0; transform: translateY(10px) scale(0.97); }
+                to { opacity: 1; transform: translateY(0) scale(1); }
+            }
+            .section-head {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+            }
+            .help-btn {
+                border: 1px solid var(--border);
+                color: var(--muted);
+                background: rgba(255, 255, 255, 0.02);
+                border-radius: 999px;
+                padding: 5px 11px;
+                font-size: 12px;
+                cursor: pointer;
+            }
+            .help-modal {
+                position: fixed;
+                inset: 0;
+                background: rgba(4, 9, 17, 0.6);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                z-index: 9500;
+                padding: 18px;
+            }
+            .help-modal.is-open { display: flex; }
+            .help-panel {
+                width: min(760px, 95vw);
+                max-height: 86vh;
+                overflow-y: auto;
+                border-radius: 16px;
+                border: 1px solid var(--border);
+                background: var(--panel);
+                box-shadow: var(--glow);
+                padding: 18px;
+            }
+            .help-panel h3 { margin-bottom: 8px; }
+            .help-panel p { color: var(--muted); line-height: 1.8; }
+            .logs-wrap {
+                margin-top: 14px;
+                border-radius: 14px;
+                border: 1px solid var(--border);
+                background: var(--panel-2);
+                overflow: hidden;
+            }
+            .log-row {
+                display: grid;
+                grid-template-columns: 170px 120px 1fr;
+                gap: 10px;
+                padding: 10px 12px;
+                border-top: 1px solid var(--border);
+                font-size: 13px;
+            }
+            .log-row:first-child { border-top: 0; }
+            .log-row span:last-child { color: var(--muted); }
+            .log-type { font-weight: 700; color: var(--text); }
+            body.await-scroll .container > .header,
+            body.await-scroll .container > .card {
+                opacity: 0 !important;
+                transform: translateY(20px);
+            }
+            body.await-scroll.scrolled .container > .header {
+                opacity: 1 !important;
+                transform: translateY(0);
+                transition: opacity .55s ease, transform .55s ease;
+            }
+            body.await-scroll.scrolled .container > .card {
+                opacity: 0 !important;
+                transform: translateY(20px);
+            }
+            body.await-scroll.scrolled .container > .card.is-visible {
+                opacity: 1 !important;
+                transform: translateY(0);
+                transition: opacity .55s ease, transform .55s ease;
+            }
+            @media (max-width: 920px) {
+                .op-card-grid { grid-template-columns: 1fr; }
+                .log-row { grid-template-columns: 1fr; gap: 4px; }
+            }
         </style>
     </head>
     <body>
@@ -3359,15 +3730,7 @@
                                 <label style="display: block; margin-bottom: 8px; color: #00ff00; font-weight: bold; text-shadow: 0 0 3px #00ff00;">${t.specifyRegion}</label>
                             <select id="wkRegion" style="width: 100%; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 2px solid #00ff00; color: #00ff00; font-family: 'Courier New', monospace; font-size: 14px;">
                                     <option value="">${t.autoDetect}</option>
-                                    <option value="US">${t.regionNames.US}</option>
-                                    <option value="SG">${t.regionNames.SG}</option>
-                                    <option value="JP">${t.regionNames.JP}</option>
-                                    <option value="KR">${t.regionNames.KR}</option>
-                                    <option value="DE">${t.regionNames.DE}</option>
-                                    <option value="SE">${t.regionNames.SE}</option>
-                                    <option value="NL">${t.regionNames.NL}</option>
-                                    <option value="FI">${t.regionNames.FI}</option>
-                                    <option value="GB">${t.regionNames.GB}</option>
+                                    ${regionOptionsHtml}
                             </select>
                                 <small id="wkRegionHint" style="color: #00aa00; font-size: 0.85rem; display: none;">⚠️ ${t.customIPDisabledHint}</small>
                         </div>
@@ -3667,11 +4030,17 @@
                         </span>
                         <span class="social-text"><strong>${isFarsi ? 'بات سرور' : 'Server Bot'}</strong><small>@PIMX_PASS_BOT</small></span>
                     </a>
+                    <a class="social-link social-link-telegram" href="https://t.me/PIMX_SONIC_BOT" target="_blank" rel="noreferrer">
+                        <span class="social-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M21.86 3.12c.27-.96-.69-1.79-1.52-1.31L2.76 11.04c-.9.48-.79 1.82.17 2.15l4.56 1.55 1.76 5.43c.29.89 1.44 1.11 2.04.39l2.54-3.07 4.98 3.65c.82.6 1.99.15 2.2-.85L21.86 3.12zM9.18 13.93l8.82-8.17-6.53 9.71a1 1 0 0 1-.79.44l-1.5-1.98z"/></svg>
+                        </span>
+                        <span class="social-text"><strong>${isFarsi ? 'بات دانلود اندروید' : 'Android Download Bot'}</strong><small>@PIMX_SONIC_BOT</small></span>
+                    </a>
                     <a class="social-link social-link-telegram" href="https://t.me/PIMX_PLAY_BOT" target="_blank" rel="noreferrer">
                         <span class="social-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24"><path d="M21.86 3.12c.27-.96-.69-1.79-1.52-1.31L2.76 11.04c-.9.48-.79 1.82.17 2.15l4.56 1.55 1.76 5.43c.29.89 1.44 1.11 2.04.39l2.54-3.07 4.98 3.65c.82.6 1.99.15 2.2-.85L21.86 3.12zM9.18 13.93l8.82-8.17-6.53 9.71a1 1 0 0 1-.79.44l-1.5-1.98z"/></svg>
                         </span>
-                        <span class="social-text"><strong>${isFarsi ? 'بات دانلود اندروید' : 'Android Bot'}</strong><small>@PIMX_PLAY_BOT</small></span>
+                        <span class="social-text"><strong>${isFarsi ? 'بات موزیک (مشابه SoundCloud)' : 'Music Bot (SoundCloud-like)'}</strong><small>@PIMX_PLAY_BOT</small></span>
                     </a>
                     <a class="social-link social-link-x" href="https://x.com/pimxpass" target="_blank" rel="noreferrer">
                         <span class="social-icon" aria-hidden="true">
@@ -3687,8 +4056,8 @@
                 </div>
                     <p class="card-help" style="text-align:center; margin-top: 10px;">
                         ${isFarsi
-                            ? 'بات سرور: V2Ray / NPV Tunnel / HA Tunnel Plus / OpenVPN / HTTP Injector / HTTP Custom + پروکسی تلگرام.'
-                            : 'Server Bot: V2Ray / NPV Tunnel / HA Tunnel Plus / OpenVPN / HTTP Injector / HTTP Custom + Telegram proxy.'}
+                            ? 'بات سرور: V2Ray / NPV Tunnel / HA Tunnel Plus / OpenVPN / HTTP Injector / HTTP Custom + پروکسی تلگرام • اندروید: @PIMX_SONIC_BOT • موزیک: @PIMX_PLAY_BOT'
+                            : 'Server Bot: V2Ray / NPV Tunnel / HA Tunnel Plus / OpenVPN / HTTP Injector / HTTP Custom + Telegram proxy • Android: @PIMX_SONIC_BOT • Music bot: @PIMX_PLAY_BOT'}
                     </p>
             </div>
         </div>
@@ -3728,15 +4097,125 @@
                 }
                 
                 const t = translations[isFarsi ? 'fa' : 'en'];
-                
+
+                function showToast(message, type) {
+                    const wrap = document.getElementById('toastWrap') || (() => {
+                        const el = document.createElement('div');
+                        el.id = 'toastWrap';
+                        document.body.appendChild(el);
+                        return el;
+                    })();
+                    const toast = document.createElement('div');
+                    toast.className = 'toast-item ' + (type || 'success');
+                    toast.textContent = String(message || '');
+                    wrap.appendChild(toast);
+                    setTimeout(() => {
+                        toast.style.opacity = '0';
+                        toast.style.transform = 'translateY(8px)';
+                        setTimeout(() => toast.remove(), 260);
+                    }, 2800);
+                }
+
+                function applyLanguage(lang) {
+                    isFarsi = lang === 'fa' || lang === 'fa-IR';
+                    const ui = isFarsi ? {
+                        dir: 'rtl',
+                        lang: 'fa-IR',
+                        title: 'مرکز اشتراک • پنل مدیریت پیشرفته',
+                        subtitle: 'پنل یک‌صفحه‌ای برای مدیریت کلاینت، تنظیمات KV و لینک اشتراک',
+                        quick: 'شروع سریع',
+                        step1: '۱) سرور',
+                        step2: '۲) کلاینت',
+                        step3: '۳) پیشرفته',
+                        step4: '۴) لینک‌ها',
+                        client: '[ انتخاب کلاینت ]',
+                        status: '[ وضعیت سیستم ]',
+                        settings: '[ تنظیمات ]',
+                        links: '[ لینک‌های مرتبط ]',
+                        settingsHint: 'تنظیمات در KV ذخیره می‌شوند و همان لحظه روی خروجی اشتراک اعمال می‌گردند.',
+                        clientHint: 'روی کلاینت موردنظر بزن؛ لینک ساخته می‌شود و کپی می‌گردد.',
+                        statusHint: 'وضعیت واقعی Worker، منطقه و ProxyIP را اینجا ببین.',
+                        linksHint: 'لینک‌های رسمی PIMXPASS برای کانال، بات‌ها و شبکه‌های اجتماعی.',
+                        saveRegion: 'ذخیره منطقه',
+                        saveProtocol: 'ذخیره پروتکل',
+                        saveSettings: 'ذخیره تنظیمات',
+                        saveAdvanced: 'ذخیره پیشرفته',
+                        refresh: 'بازخوانی',
+                        reset: 'بازنشانی',
+                        help: 'آموزش'
+                    } : {
+                        dir: 'ltr',
+                        lang: 'en-US',
+                        title: 'Subscription Center • Advanced Panel',
+                        subtitle: 'Single-page control center for clients, KV settings, and subscription links',
+                        quick: 'Quick Start',
+                        step1: '1) Server',
+                        step2: '2) Client',
+                        step3: '3) Advanced',
+                        step4: '4) Links',
+                        client: '[ Select Client ]',
+                        status: '[ System Status ]',
+                        settings: '[ Settings ]',
+                        links: '[ Links ]',
+                        settingsHint: 'Settings are stored in KV and applied immediately to generated subscriptions.',
+                        clientHint: 'Pick a client and the link is generated and copied.',
+                        statusHint: 'Check real Worker region, ProxyIP mode, and matching state here.',
+                        linksHint: 'Official PIMXPASS links for channel, bots, and socials.',
+                        saveRegion: 'Save region',
+                        saveProtocol: 'Save protocol settings',
+                        saveSettings: 'Save settings',
+                        saveAdvanced: 'Save advanced',
+                        refresh: 'Refresh',
+                        reset: 'Reset',
+                        help: 'Guide'
+                    };
+                    document.documentElement.setAttribute('lang', ui.lang);
+                    document.documentElement.setAttribute('dir', ui.dir);
+                    const subtitleEl = document.querySelector('.subtitle');
+                    if (subtitleEl) subtitleEl.textContent = ui.title + ' • ' + ui.subtitle;
+                    const quickTitle = document.querySelector('#card-wizard .card-title');
+                    if (quickTitle) quickTitle.textContent = ui.quick;
+                    const steps = document.querySelectorAll('.step-btn');
+                    if (steps[0]) steps[0].textContent = ui.step1;
+                    if (steps[1]) steps[1].textContent = ui.step2;
+                    if (steps[2]) steps[2].textContent = ui.step3;
+                    if (steps[3]) steps[3].textContent = ui.step4;
+                    const clientTitle = document.querySelector('#card-client .card-title');
+                    if (clientTitle) clientTitle.textContent = ui.client;
+                    const statusTitle = document.querySelector('#card-status .card-title');
+                    if (statusTitle) statusTitle.textContent = ui.status;
+                    const settingsTitle = document.querySelector('#configCard .card-title');
+                    if (settingsTitle) settingsTitle.textContent = ui.settings;
+                    const linksTitle = document.querySelector('#card-links .card-title');
+                    if (linksTitle) linksTitle.textContent = ui.links;
+                    const helps = document.querySelectorAll('.help-btn');
+                    helps.forEach((btn) => btn.textContent = ui.help);
+                    const helpsText = document.querySelectorAll('.card-help');
+                    if (helpsText[1]) helpsText[1].textContent = ui.clientHint;
+                    if (helpsText[2]) helpsText[2].textContent = ui.statusHint;
+                    if (helpsText[3]) helpsText[3].textContent = ui.settingsHint;
+                    if (helpsText[4]) helpsText[4].textContent = ui.linksHint;
+                    const saveRegionBtn = document.querySelector('#regionForm button[type="submit"]');
+                    if (saveRegionBtn) saveRegionBtn.textContent = ui.saveRegion;
+                    const saveProtocolBtn = document.getElementById('saveProtocolBtn');
+                    if (saveProtocolBtn) saveProtocolBtn.textContent = ui.saveProtocol;
+                    const saveSettingsBtn = document.querySelector('#otherConfigForm button[type="submit"]');
+                    if (saveSettingsBtn) saveSettingsBtn.textContent = ui.saveSettings;
+                    const saveAdvancedBtn = document.querySelector('#advancedConfigForm button[type="submit"]');
+                    if (saveAdvancedBtn) saveAdvancedBtn.textContent = ui.saveAdvanced;
+                    const refreshBtn = document.querySelector('button[onclick="loadCurrentConfig()"]');
+                    if (refreshBtn) refreshBtn.textContent = ui.refresh;
+                    const resetBtn = document.querySelector('button[onclick="resetAllConfig()"]');
+                    if (resetBtn) resetBtn.textContent = ui.reset;
+                }
+
                 function changeLanguage(lang) {
                     localStorage.setItem('preferredLanguage', lang);
-                    // Set cookie (1 year)
                     const expiryDate = new Date();
                     expiryDate.setFullYear(expiryDate.getFullYear() + 1);
                     document.cookie = 'preferredLanguage=' + lang + '; path=/; expires=' + expiryDate.toUTCString() + '; SameSite=Lax';
-                    // Reload without URL params
-                    window.location.reload();
+                    applyLanguage(lang);
+                    showToast(isFarsi ? 'زبان بدون رفرش اعمال شد' : 'Language changed without refresh', 'success');
                 }
                 
                 // On load: theme + language sync
@@ -3785,12 +4264,18 @@
                         expiryDate.setFullYear(expiryDate.getFullYear() + 1);
                         document.cookie = 'preferredLanguage=' + savedLang + '; path=/; expires=' + expiryDate.toUTCString() + '; SameSite=Lax';
                     }
+                    const activeLang = urlLang || savedLang || (isFarsi ? 'fa' : 'en');
+                    applyLanguage(activeLang);
+                    const languageSelector = document.getElementById('languageSelector');
+                    if (languageSelector) {
+                        languageSelector.value = activeLang.startsWith('fa') ? 'fa' : 'en';
+                    }
 
                     // One-page navigation (keep all cards visible and scroll to section)
                     const stepTarget = {
                         server: 'card-status',
                         client: 'card-client',
-                        advanced: 'configCard',
+                        advanced: 'advancedCard',
                         links: 'card-links',
                     };
                     function setWizardStep(step, shouldScroll) {
@@ -3820,12 +4305,19 @@
                     const seenIntro = sessionStorage.getItem('pimx_intro_seen') === '1';
                     const finishIntro = () => {
                         document.body.classList.add('loaded');
+                        document.body.classList.add('await-scroll');
                         if (loader) {
                             loader.classList.add('is-hidden');
                             setTimeout(() => {
                                 if (loader.parentNode) loader.parentNode.removeChild(loader);
                             }, 560);
                         }
+                        const unlockOnScroll = () => {
+                            document.body.classList.add('scrolled');
+                            window.removeEventListener('scroll', unlockOnScroll);
+                        };
+                        window.addEventListener('scroll', unlockOnScroll, { passive: true });
+                        if (window.scrollY > 8) unlockOnScroll();
                         sessionStorage.setItem('pimx_intro_seen', '1');
                     };
                     setTimeout(finishIntro, seenIntro ? 120 : 1500);
@@ -3915,27 +4407,27 @@
                     
                     if (clientName === 'V2RAY') {
                         navigator.clipboard.writeText(finalUrl).then(function() {
-                                alert(displayName + " " + t.subscriptionCopied);
+                                showToast(displayName + " " + t.subscriptionCopied, 'success');
                         });
                     } else if (clientName === 'Shadowrocket') {
                         schemeUrl = 'shadowrocket://add/' + encodeURIComponent(finalUrl);
                         tryOpenApp(schemeUrl, function() {
                             navigator.clipboard.writeText(finalUrl).then(function() {
-                                    alert(displayName + " " + t.subscriptionCopied);
+                                    showToast(displayName + " " + t.subscriptionCopied, 'success');
                             });
                         });
                     } else if (clientName === 'V2RAYNG') {
                         schemeUrl = 'v2rayng://install?url=' + encodeURIComponent(finalUrl);
                         tryOpenApp(schemeUrl, function() {
                             navigator.clipboard.writeText(finalUrl).then(function() {
-                                    alert(displayName + " " + t.subscriptionCopied);
+                                    showToast(displayName + " " + t.subscriptionCopied, 'success');
                             });
                         });
                     } else if (clientName === 'NEKORAY') {
                         schemeUrl = 'nekoray://install-config?url=' + encodeURIComponent(finalUrl);
                         tryOpenApp(schemeUrl, function() {
                             navigator.clipboard.writeText(finalUrl).then(function() {
-                                    alert(displayName + " " + t.subscriptionCopied);
+                                    showToast(displayName + " " + t.subscriptionCopied, 'success');
                             });
                         });
                     }
@@ -3966,12 +4458,12 @@
                         if (schemeUrl) {
                             tryOpenApp(schemeUrl, function() {
                                 navigator.clipboard.writeText(finalUrl).then(function() {
-                                        alert(displayName + " " + t.subscriptionCopied);
+                                        showToast(displayName + " " + t.subscriptionCopied, 'success');
                                 });
                             });
                         } else {
                             navigator.clipboard.writeText(finalUrl).then(function() {
-                                    alert(displayName + " " + t.subscriptionCopied);
+                                    showToast(displayName + " " + t.subscriptionCopied, 'success');
                             });
                         }
                     } else {
@@ -4012,12 +4504,12 @@
                         if (schemeUrl) {
                             tryOpenApp(schemeUrl, function() {
                                 navigator.clipboard.writeText(finalUrl).then(function() {
-                                        alert(displayName + " " + t.subscriptionCopied);
+                                        showToast(displayName + " " + t.subscriptionCopied, 'success');
                                 });
                             });
                         } else {
                             navigator.clipboard.writeText(finalUrl).then(function() {
-                                    alert(displayName + " " + t.subscriptionCopied);
+                                    showToast(displayName + " " + t.subscriptionCopied, 'success');
                             });
                         }
                     }
@@ -4176,7 +4668,7 @@
                             detectedRegion = data.region;
                             
                                 geoInfo.innerHTML = t.detectionMethod + '<span style="color: #44aa44;">' + t.manualRegion + '</span>';
-                                regionStatus.innerHTML = t.workerRegion + '<span style="color: #44ff44;">🎯 ' + t.regionNames[detectedRegion] + t.manualRegionDesc + '</span>';
+                                regionStatus.innerHTML = t.workerRegion + '<span style="color: #44ff44;">🎯 ' + (t.regionNames[detectedRegion] || detectedRegion) + t.manualRegionDesc + '</span>';
                             
                             // Show configured status instead of detection
                                 if (backupStatus) backupStatus.innerHTML = t.proxyIPStatus + '<span style="color: #44ff44;">✅ ' + t.proxyIPAvailable + '</span>';
@@ -4184,7 +4676,7 @@
                                 if (regionMatch) regionMatch.innerHTML = t.regionMatch + '<span style="color: #44ff44;">✅ ' + t.sameRegionIP + '</span>';
                             
                             return; // Early return; skip remaining region-matching logic
-                            } else if (data.region && t.regionNames[data.region]) {
+                            } else if (data.region) {
                             detectedRegion = data.region;
                         }
                         
@@ -4194,7 +4686,7 @@
                             geoInfo.innerHTML = t.detectionMethod + '<span style="color: #ff4444;">' + t.detectionFailed + '</span>';
                     }
                     
-                        regionStatus.innerHTML = t.workerRegion + '<span style="color: #44ff44;">✅ ' + t.regionNames[detectedRegion] + '</span>';
+                        regionStatus.innerHTML = t.workerRegion + '<span style="color: #44ff44;">✅ ' + (t.regionNames[detectedRegion] || detectedRegion) + '</span>';
                     
                     // Show configured status directly (skip detection)
                     if (backupStatus) {
@@ -4298,9 +4790,9 @@
                     const data = await response.json();
                     
                     if (data.detectedRegion) {
-                            alert(t.apiTestResult + data.detectedRegion + '\\n' + t.apiTestTime + data.timestamp);
+                            showToast(t.apiTestResult + data.detectedRegion + ' • ' + t.apiTestTime + data.timestamp, 'success');
                     } else {
-                            alert(t.apiTestFailed + (data.error || t.unknownError));
+                            showToast(t.apiTestFailed + (data.error || t.unknownError), 'error');
                     }
                 } catch (error) {
                         function getCookie(name) {
@@ -4326,7 +4818,7 @@
                         };
                         
                         const t = translations[isFarsi ? 'fa' : 'en'];
-                        alert(t.apiTestError + error.message);
+                        showToast(t.apiTestError + error.message, 'error');
                 }
             }
             
@@ -4383,6 +4875,7 @@
                             // KV not configured
                             document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">' + t.kvDisabled + '</span>';
                             document.getElementById('configCard').style.display = 'block';
+                            if (document.getElementById('advancedCard')) document.getElementById('advancedCard').style.display = 'none';
                             document.getElementById('currentConfig').textContent = t.kvNotConfigured;
                     } else if (response.ok) {
                         try {
@@ -4393,20 +4886,24 @@
                                 document.getElementById('kvStatus').innerHTML = '<span style="color: #44ff44;">' + t.kvEnabled + '</span>';
                                 document.getElementById('configContent').style.display = 'block';
                                 document.getElementById('configCard').style.display = 'block';
+                                if (document.getElementById('advancedCard')) document.getElementById('advancedCard').style.display = 'block';
                                 await loadCurrentConfig();
                             } else {
                                 document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">' + t.kvDisabled + '</span>';
                                 document.getElementById('configCard').style.display = 'block';
+                                if (document.getElementById('advancedCard')) document.getElementById('advancedCard').style.display = 'none';
                                 document.getElementById('currentConfig').textContent = t.kvNotEnabled;
                                 }
                         } catch (jsonError) {
                             document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">' + t.kvCheckFailed + '</span>';
                             document.getElementById('configCard').style.display = 'block';
+                            if (document.getElementById('advancedCard')) document.getElementById('advancedCard').style.display = 'none';
                             document.getElementById('currentConfig').textContent = t.kvCheckFailedFormat;
                         }
                     } else {
                         document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">' + t.kvDisabled + '</span>';
                         document.getElementById('configCard').style.display = 'block';
+                        if (document.getElementById('advancedCard')) document.getElementById('advancedCard').style.display = 'none';
                         document.getElementById('currentConfig').textContent = t.kvCheckFailedStatus + response.status;
                     }
                 } catch (error) {
@@ -4442,6 +4939,7 @@
                     
                     document.getElementById('kvStatus').innerHTML = '<span style="color: #ffaa00;">' + t.kvDisabled + '</span>';
                     document.getElementById('configCard').style.display = 'block';
+                    if (document.getElementById('advancedCard')) document.getElementById('advancedCard').style.display = 'none';
                     document.getElementById('currentConfig').textContent = t.kvCheckFailedError + error.message;
                 }
             }
@@ -4618,10 +5116,8 @@
                         await loadCurrentConfig();
                         // Update wk selector state
                         updateWkRegionState();
-                        // After saving, reload to refresh system status
-                        setTimeout(function() {
-                            window.location.reload();
-                        }, 1500);
+                        await checkSystemStatus();
+                        await checkECHStatus();
                     } else {
                     }
                 } catch (error) {
@@ -4689,10 +5185,8 @@
                             await loadCurrentConfig();
                             // Update wk selector state
                             updateWkRegionState();
-                            // Reload to refresh system status
-                            setTimeout(function() {
-                                window.location.reload();
-                            }, 1500);
+                            await checkSystemStatus();
+                            await checkECHStatus();
                         }
                     } catch (error) {
                         showStatus('Reset failed: ' + error.message, 'error');
@@ -4789,7 +5283,7 @@
                         if (!document.getElementById('ev').checked && 
                             !document.getElementById('et').checked && 
                             !document.getElementById('ex').checked) {
-                            alert(isFarsi ? 'حداقل باید یک پروتکل را فعال کنید!' : 'Please enable at least one protocol.');
+                            showToast(isFarsi ? 'حداقل باید یک پروتکل را فعال کنید!' : 'Please enable at least one protocol.', 'error');
                             return;
                         }
                         
@@ -4816,7 +5310,7 @@
                         if (!document.getElementById('ev').checked && 
                             !document.getElementById('et').checked && 
                             !document.getElementById('ex').checked) {
-                            alert(isFarsi ? 'حداقل باید یک پروتکل را فعال کنید!' : 'Please enable at least one protocol.');
+                            showToast(isFarsi ? 'حداقل باید یک پروتکل را فعال کنید!' : 'Please enable at least one protocol.', 'error');
                             return;
                         }
                         
@@ -4983,7 +5477,7 @@
                         const urlInput = document.getElementById('fetchURLInput');
                         const fetchUrl = urlInput.value.trim();
                         if (!fetchUrl) {
-                            alert('${isFarsi ? 'لطفا URL را وارد کنید' : 'Please enter a URL'}');
+                            showToast('${isFarsi ? 'لطفا URL را وارد کنید' : 'Please enter a URL'}', 'error');
                             return;
                         }
                         
@@ -5501,6 +5995,243 @@
                         return { success: false, latency: -1, error: errorMsg, colo: '', testUrl: testUrl };
                     }
                 }
+            });
+
+            window.addEventListener('DOMContentLoaded', function() {
+                const container = document.querySelector('.container');
+                const configCard = document.getElementById('configCard');
+                const advancedForm = document.getElementById('advancedConfigForm');
+                const advancedTitle = configCard ? configCard.querySelector('h3') : null;
+                const LOG_KEY = 'pimx_panel_logs_v2';
+
+                function langCode() {
+                    const lang = (localStorage.getItem('preferredLanguage') || getCookie('preferredLanguage') || '').toLowerCase();
+                    return (lang === 'fa' || lang === 'fa-ir') ? 'fa' : 'en';
+                }
+                function i18n(fa, en) {
+                    return langCode() === 'fa' ? fa : en;
+                }
+                function readLogs() {
+                    try {
+                        const raw = localStorage.getItem(LOG_KEY);
+                        return raw ? JSON.parse(raw) : [];
+                    } catch (error) {
+                        return [];
+                    }
+                }
+                function writeLogs(items) {
+                    localStorage.setItem(LOG_KEY, JSON.stringify(items.slice(0, 120)));
+                }
+                function renderLogs() {
+                    const wrap = document.getElementById('logsWrap');
+                    if (!wrap) return;
+                    const items = readLogs();
+                    if (!items.length) {
+                        wrap.innerHTML = '<div class="log-row"><span class="log-type">' + i18n('وضعیت', 'Status') + '</span><span>-</span><span>' + i18n('هنوز لاگی ثبت نشده است.', 'No logs yet.') + '</span></div>';
+                        return;
+                    }
+                    wrap.innerHTML = items.map(function(item) {
+                        const date = new Date(item.time);
+                        const local = isNaN(date.getTime()) ? item.time : date.toLocaleString();
+                        return '<div class="log-row"><span>' + local + '</span><span class="log-type">' + item.type + '</span><span>' + item.message + '</span></div>';
+                    }).join('');
+                }
+                function pushLog(type, message) {
+                    const now = new Date();
+                    const entry = { time: now.toISOString(), type: type, message: message };
+                    const items = [entry].concat(readLogs());
+                    writeLogs(items);
+                    renderLogs();
+                }
+                function ensureHelpModal() {
+                    if (document.getElementById('helpModal')) return;
+                    const modal = document.createElement('div');
+                    modal.id = 'helpModal';
+                    modal.className = 'help-modal';
+                    modal.innerHTML = '<div class="help-panel"><div style="display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:10px;"><h3 id="helpTitle">' + i18n('راهنما', 'Guide') + '</h3><button type="button" id="helpCloseBtn">' + i18n('بستن', 'Close') + '</button></div><p id="helpBody"></p></div>';
+                    document.body.appendChild(modal);
+                    document.getElementById('helpCloseBtn').addEventListener('click', function() {
+                        modal.classList.remove('is-open');
+                    });
+                    modal.addEventListener('click', function(event) {
+                        if (event.target === modal) modal.classList.remove('is-open');
+                    });
+                }
+                function addSectionHelpButtons() {
+                    ensureHelpModal();
+                    const helpMap = {
+                        cardClientFa: 'در این بخش کلاینت هدف را انتخاب می‌کنی. لینک اشتراک همان‌جا ساخته می‌شود و به‌صورت خودکار کپی می‌شود.',
+                        cardClientEn: 'Pick a target client here. The subscription link is generated and copied automatically.',
+                        wizardFa: 'این بخش مسیر سریع استفاده را نشان می‌دهد: سرور، کلاینت، تنظیمات پیشرفته و لینک‌ها.',
+                        wizardEn: 'Quick flow: server, client, advanced settings, and links.',
+                        cardStatusFa: 'وضعیت منطقه Worker، منطق تطبیق، وضعیت ECH و ProxyIP را زنده نمایش می‌دهد.',
+                        cardStatusEn: 'Shows live Worker region, matching logic, ECH status, and ProxyIP behavior.',
+                        configFa: 'تنظیمات اصلی اینجا ذخیره می‌شوند. پس از ذخیره، خروجی اشتراک بدون رفرش به‌روزرسانی می‌شود.',
+                        configEn: 'Main settings are stored here. After save, generated subscriptions update without page reload.',
+                        advancedFa: 'گزینه‌های پیشرفته شامل Converter، فیلتر IP، کنترل API و سیاست‌های TLS در این بخش است.',
+                        advancedEn: 'Advanced controls include converter URL, IP filters, API management, and TLS policies.',
+                        linksFa: 'تمام لینک‌های رسمی کانال، بات‌ها و شبکه‌های اجتماعی از این بخش در دسترس هستند.',
+                        linksEn: 'All official channel, bot, and social links are available in this section.',
+                        logsFa: 'هر تغییری که در پنل انجام بدهی در این بخش به شکل تایم‌لاین ثبت می‌شود.',
+                        logsEn: 'Every change you make in the panel is recorded here as a timeline.'
+                    };
+                    const sectionDefs = [
+                        { id: 'card-wizard', fa: helpMap.wizardFa, en: helpMap.wizardEn },
+                        { id: 'card-client', fa: helpMap.cardClientFa, en: helpMap.cardClientEn },
+                        { id: 'card-status', fa: helpMap.cardStatusFa, en: helpMap.cardStatusEn },
+                        { id: 'configCard', fa: helpMap.configFa, en: helpMap.configEn },
+                        { id: 'advancedCard', fa: helpMap.advancedFa, en: helpMap.advancedEn },
+                        { id: 'card-links', fa: helpMap.linksFa, en: helpMap.linksEn },
+                        { id: 'card-logs', fa: helpMap.logsFa, en: helpMap.logsEn }
+                    ];
+                    sectionDefs.forEach(function(section) {
+                        const card = document.getElementById(section.id);
+                        if (!card) return;
+                        const title = card.querySelector('.card-title');
+                        if (!title || title.parentElement.classList.contains('section-head')) return;
+                        const head = document.createElement('div');
+                        head.className = 'section-head';
+                        title.parentElement.insertBefore(head, title);
+                        head.appendChild(title);
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'help-btn';
+                        btn.textContent = i18n('آموزش', 'Guide');
+                        btn.addEventListener('click', function() {
+                            const modal = document.getElementById('helpModal');
+                            if (!modal) return;
+                            document.getElementById('helpTitle').textContent = title.textContent;
+                            document.getElementById('helpBody').textContent = langCode() === 'fa' ? section.fa : section.en;
+                            modal.classList.add('is-open');
+                        });
+                        head.appendChild(btn);
+                    });
+                }
+                function separateAdvancedSection() {
+                    if (!container || !configCard || !advancedForm) return;
+                    if (document.getElementById('advancedCard')) return;
+                    const advancedCard = document.createElement('div');
+                    advancedCard.className = 'card';
+                    advancedCard.id = 'advancedCard';
+                    advancedCard.style.display = 'none';
+                    advancedCard.innerHTML = '<h2 class="card-title">' + i18n('[ تنظیمات پیشرفته ]', '[ Advanced Settings ]') + '</h2><p class="card-help">' + i18n('این بخش به‌صورت جدا برای کنترل‌های حرفه‌ای طراحی شده تا شلوغی Settings کم شود.', 'Advanced controls are separated for a cleaner settings experience.') + '</p>';
+                    if (advancedTitle) advancedTitle.remove();
+                    advancedCard.appendChild(advancedForm);
+                    configCard.insertAdjacentElement('afterend', advancedCard);
+                }
+                function mountOperationCards() {
+                    const form = document.getElementById('advancedConfigForm');
+                    if (!form || document.getElementById('opModeGrid')) return;
+                    const holder = document.createElement('div');
+                    holder.id = 'opModeGrid';
+                    holder.innerHTML = '<label style="display:block;margin-bottom:8px;">' + i18n('عملیات سریع', 'Operation Presets') + '</label><div class="op-card-grid"><button type="button" class="op-card-btn" data-mode="balanced">' + i18n('متعادل', 'Balanced') + '</button><button type="button" class="op-card-btn" data-mode="performance">' + i18n('پرفورمنس', 'Performance') + '</button><button type="button" class="op-card-btn" data-mode="secure">' + i18n('امن', 'Secure') + '</button></div>';
+                    form.insertBefore(holder, form.firstChild);
+                    const buttons = holder.querySelectorAll('.op-card-btn');
+                    const applyMode = function(mode) {
+                        const regionMatching = document.getElementById('regionMatching');
+                        const portControl = document.getElementById('portControl');
+                        const preferredControl = document.getElementById('preferredControl');
+                        const downgradeControl = document.getElementById('downgradeControl');
+                        if (!regionMatching || !portControl || !preferredControl || !downgradeControl) return;
+                        if (mode === 'balanced') {
+                            regionMatching.value = '';
+                            portControl.value = '';
+                            preferredControl.value = '';
+                            downgradeControl.value = '';
+                        } else if (mode === 'performance') {
+                            regionMatching.value = '';
+                            portControl.value = '';
+                            preferredControl.value = '';
+                            downgradeControl.value = 'no';
+                        } else {
+                            regionMatching.value = '';
+                            portControl.value = 'yes';
+                            preferredControl.value = '';
+                            downgradeControl.value = '';
+                        }
+                        buttons.forEach(function(btn) {
+                            btn.classList.toggle('active', btn.dataset.mode === mode);
+                        });
+                        pushLog('MODE', i18n('پروفایل عملیاتی: ', 'Operation preset: ') + mode);
+                    };
+                    buttons.forEach(function(btn) {
+                        btn.addEventListener('click', function() {
+                            applyMode(btn.dataset.mode);
+                        });
+                    });
+                    applyMode('balanced');
+                }
+                function ensureLogsCard() {
+                    if (!container || document.getElementById('card-logs')) return;
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.id = 'card-logs';
+                    card.innerHTML = '<h2 class="card-title">' + i18n('[ لاگ تغییرات ]', '[ Activity Logs ]') + '</h2><p class="card-help">' + i18n('هر تغییر مهم تنظیمات، عملیات کاربر و انتخاب کلاینت اینجا ثبت می‌شود.', 'Settings changes, client actions, and important operations are recorded here.') + '</p><div class="logs-wrap" id="logsWrap"></div><div style="margin-top:10px;display:flex;gap:10px;"><button type="button" id="clearLogsBtn">' + i18n('پاک کردن لاگ', 'Clear logs') + '</button></div>';
+                    container.appendChild(card);
+                    const clearBtn = document.getElementById('clearLogsBtn');
+                    if (clearBtn) {
+                        clearBtn.addEventListener('click', function() {
+                            writeLogs([]);
+                            renderLogs();
+                            showToast(i18n('لاگ‌ها پاک شدند', 'Logs cleared'), 'success');
+                        });
+                    }
+                }
+                function initScrollReveal() {
+                    const cards = Array.from(document.querySelectorAll('.container > .card'));
+                    let started = false;
+                    const observer = new IntersectionObserver(function(entries) {
+                        entries.forEach(function(entry) {
+                            if (entry.isIntersecting) entry.target.classList.add('is-visible');
+                        });
+                    }, { threshold: 0.16 });
+                    const start = function() {
+                        if (started || !document.body.classList.contains('scrolled')) return;
+                        started = true;
+                        cards.forEach(function(card) {
+                            observer.observe(card);
+                        });
+                    };
+                    start();
+                    window.addEventListener('scroll', start, { passive: true });
+                }
+                const originalSaveConfig = window.saveConfig;
+                if (typeof originalSaveConfig === 'function') {
+                    window.saveConfig = async function(configData) {
+                        const changedKeys = Object.keys(configData || {});
+                        if (changedKeys.length) {
+                            pushLog('SETTING', i18n('ذخیره: ', 'Saved: ') + changedKeys.join(', '));
+                        }
+                        return await originalSaveConfig.apply(this, arguments);
+                    };
+                }
+                const originalGenerateClientLink = window.generateClientLink;
+                if (typeof originalGenerateClientLink === 'function') {
+                    window.generateClientLink = function(clientType, clientName) {
+                        pushLog('CLIENT', i18n('انتخاب کلاینت: ', 'Client selected: ') + (clientName || 'Unknown'));
+                        return originalGenerateClientLink.apply(this, arguments);
+                    };
+                }
+                const themeToggle = document.getElementById('themeToggle');
+                if (themeToggle) {
+                    themeToggle.addEventListener('click', function() {
+                        const mode = document.documentElement.dataset.theme || 'dark';
+                        pushLog('THEME', i18n('تغییر تم: ', 'Theme changed: ') + mode);
+                    });
+                }
+                const languageSelector = document.getElementById('languageSelector');
+                if (languageSelector) {
+                    languageSelector.addEventListener('change', function() {
+                        pushLog('LANG', i18n('تغییر زبان: ', 'Language changed: ') + this.value);
+                    });
+                }
+                separateAdvancedSection();
+                mountOperationCards();
+                ensureLogsCard();
+                addSectionHelpButtons();
+                initScrollReveal();
+                renderLogs();
+                pushLog('BOOT', i18n('پنل بارگذاری شد', 'Panel loaded'));
             });
         </script>
     </body>
@@ -6387,15 +7118,12 @@
                     customPreferredDomains = [];
                 } else {
                     backupIPs = [
-                        { domain: 'ProxyIP.US.CMLiussss.net', region: 'US', regionCode: 'US', port: 443 },
-                        { domain: 'ProxyIP.SG.CMLiussss.net', region: 'SG', regionCode: 'SG', port: 443 },
-                        { domain: 'ProxyIP.JP.CMLiussss.net', region: 'JP', regionCode: 'JP', port: 443 },
-                        { domain: 'ProxyIP.KR.CMLiussss.net', region: 'KR', regionCode: 'KR', port: 443 },
-                        { domain: 'ProxyIP.DE.CMLiussss.net', region: 'DE', regionCode: 'DE', port: 443 },
-                        { domain: 'ProxyIP.SE.CMLiussss.net', region: 'SE', regionCode: 'SE', port: 443 },
-                        { domain: 'ProxyIP.NL.CMLiussss.net', region: 'NL', regionCode: 'NL', port: 443 },
-                        { domain: 'ProxyIP.FI.CMLiussss.net', region: 'FI', regionCode: 'FI', port: 443 },
-                        { domain: 'ProxyIP.GB.CMLiussss.net', region: 'GB', regionCode: 'GB', port: 443 },
+                        ...REGION_CODES.map((code) => ({
+                            domain: hubDomainMap[regionRouteMap[code] || 'SG'],
+                            region: code,
+                            regionCode: code,
+                            port: 443
+                        })),
                         { domain: 'ProxyIP.Oracle.cmliussss.net', region: 'Oracle', regionCode: 'Oracle', port: 443 },
                         { domain: 'ProxyIP.DigitalOcean.CMLiussss.net', region: 'DigitalOcean', regionCode: 'DigitalOcean', port: 443 },
                         { domain: 'ProxyIP.Vultr.CMLiussss.net', region: 'Vultr', regionCode: 'Vultr', port: 443 },
