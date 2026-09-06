@@ -1,0 +1,19 @@
+name = "pimxpass"
+main = "src/worker.js"
+compatibility_date = "2026-01-20"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+PROJECT_NAME = "PIMXPASS"
+VERSION = "3.0.0"
+
+[[kv_namespaces]]
+binding = "PIMXPASS_KV"
+id = "3e587cc6f331486b9bb9567ce4ca2070"
+preview_id = "d4dbe60d24f945dbb63ed10a9799e66e"
+
+[placement]
+mode = "smart"
+
+[observability]
+enabled = true

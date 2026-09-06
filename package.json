@@ -1,0 +1,13 @@
+{
+  "name": "pimxpass-panel",
+  "version": "1.0.0",
+  "description": "PIMX VPN Panel — Cloudflare Workers",
+  "scripts": {
+    "setup": "node scripts/setup.js",
+    "dev": "wrangler dev",
+    "deploy": "node scripts/setup.js --deploy",
+    "start": "npm run dev"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}
