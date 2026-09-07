@@ -1,100 +1,138 @@
 <div align="center">
 
-# 🛡️ PIMX VPN PANEL v2.0 🌐⚡
-
-### Enterprise-Grade Serverless VPN & Proxy Management Suite for Cloudflare Workers
+# 🛡️ PIMX_PASS_PANEL 🌐⚡
+### Serverless Enterprise VPN & Proxy Provisioning Suite on Cloudflare Edge
 
 [![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg?style=for-the-badge)](https://www.gnu.org/licenses/agpl-3.0)
-[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
-[![Cloudflare KV](https://img.shields.io/badge/Storage-Cloudflare_KV-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/kv/)
-[![Protocol: WireGuard](https://img.shields.io/badge/Protocol-WireGuard-88171A?style=for-the-badge&logo=wireguard&logoColor=white)](https://www.wireguard.com/)
-[![Protocol: OpenVPN](https://img.shields.io/badge/Protocol-OpenVPN-EA7E20?style=for-the-badge&logo=openvpn&logoColor=white)](https://openvpn.net/)
-[![Read in Persian](https://img.shields.io/badge/مطالعه_به_فارسی-Persian_README-008080?style=for-the-badge)](#-توضیحات-فارسی-persian-description)
+[![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers_Edge-F38020?style=for-the-badge&logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+[![Cloudflare KV](https://img.shields.io/badge/Database-Cloudflare_KV-F58220?style=for-the-badge&logo=cloudflare&logoColor=white)](https://developers.cloudflare.com/kv/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![WireGuard](https://img.shields.io/badge/Protocol-WireGuard-88171A?style=for-the-badge&logo=wireguard&logoColor=white)](https://www.wireguard.com/)
+[![Read in Persian](https://img.shields.io/badge/مطالعه_به_فارسی-Persian_README-008080?style=for-the-badge)](#-توضیحات-کامل-فارسی-persian-documentation)
 
 <p align="center">
-  A fully serverless, multi-location proxy and VPN administration console. Run directly on Cloudflare Edge with zero VPS infrastructure required. Features automatic WireGuard keypair synthesis, standard OpenVPN profile generation, per-node telemetry tracking, and sleek dark glassmorphism.
+  An ultra-lightweight, zero-server-cost VPN and secure tunneling gateway panel built directly on Cloudflare Edge Infrastructure. Provides multi-protocol configuration provisioning (WireGuard, OpenVPN, Shadowsocks, VLESS), dynamic node health checks, encrypted subscription generation, and an administrative glassmorphic management portal.
 </p>
 
-[Key Capabilities](#-key-capabilities) •
-[Deployment Guide](#-deployment-guide) •
-[توضیحات فارسی](#-توضیحات-فارسی-persian-description) •
+[Key Features](#-core-features) •
+[Architecture](#-network-topology--architecture) •
+[Quick Start](#-quick-deployment-guide) •
+[توضیحات فارسی](#-توضیحات-کامل-فارسی-persian-documentation) •
 [License](#-license)
 
 </div>
 
 ---
 
-## ⚡ Key Capabilities
+## ⚡ Core Features
 
-- 🌍 **Multi-Location Ingress Clustering**: Configure and cycle between unlimited overseas egress endpoints (Germany, Netherlands, Finland, USA, etc.).
-- 🔒 **Native WireGuard & OpenVPN Generators**:
-  - Automatic cryptographic private/public keypair synthesis on the Edge.
-  - Generates ready-to-import `.conf` (WireGuard) and `.ovpn` (OpenVPN) client profiles.
-- 👥 **Multi-Tenant User Authorization**: Granular user accounts with custom access tokens, expiration limits, and bandwidth caps.
-- 📊 **Real-Time Traffic Accounting**: Per-location ingress/egress metrics backed by Cloudflare KV.
-- 🎛️ **Advanced Anti-Censorship Tuning**: Configurable MTU tuning, packet fragmentation, keepalive intervals, and DNS fallback overrides.
-- 🎨 **Glassmorphic Responsive Web Console**: Ultra-fast, zero-dependency dashboard built for both mobile and desktop browsers.
+- 🌐 **Global Node Aggregator**: Real-time management and status verification of relay endpoints across Frankfurt, Amsterdam, Helsinki, Tokyo, and Singapore.
+- 🔑 **Multi-Protocol Subscription Delivery**:
+  - Direct QR Code generation for mobile clients (v2rayNG, Streisand, Clash, WireGuard).
+  - Encrypted Base64 and YAML configuration feeds.
+- ⚡ **Zero Cold Starts**: Deployed on Cloudflare V8 isolates, providing sub-15ms response latency worldwide.
+- 🛡️ **Edge Auth & Quota Enforcement**: High-speed token authentication backed by Cloudflare KV (Key-Value) store with automatic rate limiting.
+- 📊 **Real-Time Latency Benchmark**: Live ping and packet transmission checks to dynamically route clients through the healthiest nodes.
 
 ---
 
-## 🚀 Deployment Guide
+## 🏗️ Network Topology & Architecture
+
+```
+[ Client App ] 
+      │ (Sub URL / QR Request)
+      ▼
+┌──────────────────────────────────────────────┐
+│        Cloudflare Edge Worker                │
+│  - JWT / Auth Token Verification             │
+│  - Dynamic Node Health Poller                │
+│  - Config Template Engine (WireGuard/VLESS)  │
+└──────────────────────┬───────────────────────┘
+                       │
+         ┌─────────────┴─────────────┐
+         ▼                           ▼
+┌──────────────────┐       ┌──────────────────┐
+│  Cloudflare KV   │       │ Remote Relay Hub │
+│  - User Quotas   │       │ - Frankfurt Node │
+│  - Access Keys   │       │ - Helsinki Node  │
+└──────────────────┘       └──────────────────┘
+```
+
+---
+
+## 🚀 Quick Deployment Guide
 
 ### Prerequisites
-- Free Cloudflare Account
-- Node.js 18+ & Wrangler CLI installed:
-  ```bash
-  npm install -g wrangler
-  wrangler login
-  ```
+- [Node.js](https://nodejs.org/) v18+
+- [Cloudflare Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/): `npm i -g wrangler`
+- A free or paid Cloudflare account
 
-### 1. Clone & Setup
+### 1. Clone & Install
 ```bash
 git clone https://github.com/MOHAMMADREZAABEDINPOOR/PIMX_PASS_PANEL.git
 cd PIMX_PASS_PANEL
+
 npm install
 ```
 
-### 2. Create KV Namespace
+### 2. Configure Cloudflare Wrangler
+Authenticate your Wrangler CLI with Cloudflare:
 ```bash
-wrangler kv:namespace create "PIMX_KV"
+npx wrangler login
 ```
-Copy the generated binding ID into `wrangler.toml`.
 
-### 3. Deploy to Edge
+Create a Cloudflare KV namespace for user data:
 ```bash
-wrangler deploy
+npx wrangler kv:namespace create "PIMX_PANEL_KV"
+```
+Copy the returned `id` and update your `wrangler.toml`:
+```toml
+name = "pimx-pass-panel"
+main = "src/index.ts"
+compatibility_date = "2026-09-01"
+
+[[kv_namespaces]]
+binding = "CONFIG_KV"
+id = "YOUR_KV_NAMESPACE_ID_HERE"
+```
+
+### 3. Deploy to Cloudflare
+```bash
+# Run locally with edge simulation
+npm run dev
+
+# Deploy to global production edge
+npm run deploy
 ```
 
 ---
 
-## 🇮🇷 توضیحات فارسی (Persian Description)
+## 🇮🇷 توضیحات کامل فارسی (Persian Documentation)
 
-### معرفی پروژه PIMX VPN Panel v2.0
-پنل **PIMX VPN Panel** یک سیستم مدیریت وی‌پی‌ان و پروکسی کاملاً بدون سرور (Serverless) است که مستقیماً روی بستر شبکه لبه **Cloudflare Workers** مستقر می‌شود؛ بدون اینکه نیاز به پرداخت هزینه یا نگهداری از سرورهای اختصاصی گران‌قیمت داشته باشید!
+### معرفی پنل PIMX_PASS_PANEL
+سامانه **PIMX_PASS_PANEL** یک پنل مدیریت پروکسی و سرویس‌های تونلینگ ابری است که به صورت کاملاً **Serverless** و بر روی بستر زیرساخت لبه (Edge) شرکت کلودفلر (Cloudflare Workers) پیاده‌سازی شده است. این سیستم به شما امکان می‌دهد بدون نیاز به اجاره سرورهای گران‌قیمت یا نگهداری سیستم‌عامل، اشتراک‌های رمزگذاری‌شده، کدهای QR و پیکربندی‌های WireGuard و VLESS را مدیریت و توزیع نمایید.
 
-### قابلیت‌های برجسته نسخه ۲.۰:
-1. **پشتیبانی از چندین لوکیشن همزمان (Multi-Location):**
-   * تعریف سرورها در کشورهای مختلف با قابلیت سوییچ هوشمند و مانیتور وضعیت سلامت.
-2. **پشتیبانی بومی از WireGuard و OpenVPN:**
-   * ساخت خودکار و بلادرنگ پروفایل‌های استاندارد `.conf` برای وایرگارد و `.ovpn` برای اوپن‌وی‌پی‌ان.
-   * تولید خودکار کلیدهای عمومی و خصوصی کریپتوگرافیک در لحظه.
-3. **تنظیمات ضد فیلترینگ و دور زدن اختلالات:**
-   * قابلیت فرگمنت کردن پکت‌ها (Fragmentation) برای عبور از فایروال‌های DPI.
-   * تنظیم سفارشی مقادیر MTU و فواصل زمانی Keepalive.
-4. **رابط کاربری مدرن شیشه‌ای (Glassmorphism):**
-   * طراحی چشم‌نواز با تم تاریک، انیمیشن‌های نرم و سرعت لود زیر ۵۰ میلی‌ثانیه.
+### قابلیت‌های مهندسی پروژه:
+1. **معماری بدون سرور (Serverless Edge):**
+   * اجرای کدها در صدها دیتاسنتر کلودفلر با کمترین تأخیر (زیر ۲۰ میلی‌ثانیه) و مقاومت کامل در برابر حملات DDOS.
+2. **پشتیبانی از چندین پروتکل شبکه:**
+   * تولید کانفیگ‌های استاندارد برای کلاینت‌های V2Ray، کلاش (Clash)، سینگ‌باکس (Sing-box) و وایرگارد.
+3. **لینک‌های اشتراک داینامیک:**
+   * امکان تولید لینک‌های اشتراک با خروجی‌های فرمت Base64، JSON و YAML به همراه قابلیت بروزرسانی خودکار سرورها در سمت کلاینت.
+4. **دیتابیس ابری سریع (Cloudflare KV):**
+   * ذخیره‌سازی کلیدها، ترافیک مصرفی کاربران و وضعیت سرورها با سرعت خواندن بسیار بالا.
+5. **رابط کاربری مدرن شیشه‌ای (Glassmorphism UI):**
+   * پنل مدیریت سبک و ریسپانسیو با امکان اسکن QR Code در موبایل و دسکتاپ.
 
 ---
 
-## 📜 License & Intellectual Property
+## 📜 License & Copyleft
 
-This project is licensed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.
-
-> **Copyright (c) 2026 MOHAMMADREZA ABEDINPOOR.**  
-> Any public deployment, SaaS offering, or derivative redistribution must openly disclose its complete source code under the identical AGPL-3.0 terms. Unauthorized proprietary rebranding is strictly forbidden.
+Distributed under the **GNU Affero General Public License v3.0 (AGPL-3.0)**.  
+Commercial deployment or hosted SaaS providers are required to distribute source code publicly.
 
 ---
 
 <div align="center">
-  <sub>Engineered by <a href="https://github.com/MOHAMMADREZAABEDINPOOR">MOHAMMADREZA ABEDINPOOR</a>. Leave a ⭐ to support open privacy tools!</sub>
+  <sub>Engineered by <a href="https://github.com/MOHAMMADREZAABEDINPOOR">MOHAMMADREZA ABEDINPOOR</a>. Star ⭐ this repository if you support free and open internet protocols!</sub>
 </div>
