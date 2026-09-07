@@ -23,7 +23,7 @@
 [![JavaScript](https://img.shields.io/badge/JavaScript-ES2022-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black)](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
 [![WireGuard](https://img.shields.io/badge/Protocol-WireGuard-88171A?style=for-the-badge&logo=wireguard&logoColor=white)](https://www.wireguard.com/)
 [![Security](https://img.shields.io/badge/Security-AES_GCM_%2B_SHA256-0052CC?style=for-the-badge)](https://en.wikipedia.org/wiki/Advanced_Encryption_Standard)
-[![Read in Persian](https://img.shields.io/badge/مطالعه_به_فارسی-Persian_README-008080?style=for-the-badge)](#-بخش-فوقالعاده-مفصل-و-جامع-به-زبان-فارسی-persian-documentation)
+[![Read in Persian](https://img.shields.io/badge/مطالعه_به_فارسی-Persian_README-008080?style=for-the-badge)](#persian-documentation)
 
 <p align="center">
   <b>PIMX_PASS_PANEL</b> is an enterprise-grade, serverless proxy orchestration and VPN subscription management suite engineered directly on Cloudflare Edge Workers and distributed Cloudflare KV storage. Designed to bypass aggressive internet censorship and eliminate expensive Linux VPS hosting bills, PIMX_PASS_PANEL synthesizes dynamic WireGuard and VLESS configurations, provides live multi-node latency diagnostics, delivers real-time mobile QR codes, and serves an administrative dark glassmorphic control console.
@@ -40,7 +40,7 @@
 [Wrangler Configuration](#-configuration--wranglertoml-guide) •
 [Installation & Deployment](#-step-by-step-deployment-guide) •
 [Troubleshooting](#-troubleshooting--diagnostic-guide) •
-[توضیحات فارسی](#-بخش-فوقالعاده-مفصل-و-جامع-به-زبان-فارسی-persian-documentation) •
+[توضیحات فارسی](#persian-documentation) •
 [Roadmap](#-strategic-engineering-roadmap) •
 [License](#-copyleft-license--legal-attribution)
 
@@ -272,7 +272,8 @@ https://pimxpass.YOUR-SUBDOMAIN.workers.dev/admin
 
 ---
 
-## 🇮🇷 بخش فوق‌العاده مفصل و جامع به زبان فارسی (Persian Documentation)
+## Persian Documentation
+### 🇮🇷 مستندات فوق‌العاده مفصل، جامع و فنی به زبان فارسی
 
 ### ۱. مقدمه و فلسفه طراحی پنل PIMX_PASS_PANEL
 سامانه **PIMX_PASS_PANEL** یک راهکار انقلابی، فوق‌العاده سریع و کاملاً ابری برای ساخت، مدیریت و توزیع کانفیگ‌های فیلترشکن، پروکسی و وی‌پی‌ان (VLESS, VMess, Trojan, WireGuard) است که بدون نیاز به حتی یک سرور لینوکسی گران‌قیمت بر بستر **Cloudflare Workers** اجرا می‌شود.
@@ -346,7 +347,7 @@ Under this copyleft covenant, any derivative software, hosted web application, o
 <!-- ============================================================================== -->
 <!-- ANIMATED CAPSULE FOOTER                                                        -->
 <!-- ============================================================================== -->
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=1,12,24,30&height=120&section=footer" alt="Footer" width="100%" />
+<img src="./assets/footer.svg" alt="PIMX_PASS_PANEL 3D Footer" width="100%" />
 
 <sub>Architected with passion and precision by <a href="https://github.com/MOHAMMADREZAABEDINPOOR"><b>MOHAMMADREZA ABEDINPOOR</b></a>. If PIMX_PASS_PANEL helps preserve your internet freedom, consider giving this repository a ⭐!</sub>
 
