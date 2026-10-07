@@ -1,35 +1,55 @@
 <div align="center">
 
-<img src="assets/readme/hero.gif" width="1200" alt="PIMX PASS PANEL — rotating 3D geometry" />
+<img src="assets/readme/hero.gif" width="1200" alt="PIMX PASS PANEL: an edge server rack with a floating control console" />
 
 **[English](README.md) · [فارسی](README.fa.md)**
 
-<img src="assets/readme/identity.svg" width="1200" alt="security / English and Persian documentation" />
-
 </div>
 
-# PIMX PASS PANEL
+<div dir="rtl">
+
+# 🛡️ PIMX PASS PANEL
 
 Worker در Cloudflare با رابط مدیریت فارسی، ذخیره وضعیت در KV، تولید اشتراک و اتصال پراکسی WebSocket به TCP.
 
 [GitHub](https://github.com/MOHAMMADREZAABEDINPOOR/PIMX_PASS_PANEL) · [PIMX / Profile](https://github.com/MOHAMMADREZAABEDINPOOR) · [بنر ثابت](assets/readme/hero.png)
 
-## امکانات
+| نمای کلی | جزئیات |
+|:---|:---|
+| 🛡️ تجربه | Cloudflare Worker و رابط مدیریت |
+| 🧰 فناوری | `Node.js` |
+| 🌐 زبان راهنما | [English](README.md) · [فارسی](README.fa.md) |
 
-- ارائه رابط مدیریت توسط خود Worker
-- تنظیمات و مسیرهای API مبتنی بر KV
-- تولید تنظیمات اشتراک
-- پردازش WebSocket با cloudflare:sockets
+[✨ امکانات](#امکانات) · [🚀 شروع کار](#شروع-کار) · [⚙️ تنظیمات](#تنظیمات) · [🌍 استقرار](#استقرار)
 
-## پشته فنی
+---
+
+<a id="امکانات"></a>
+
+## ✨ امکانات
+
+| بخش | قابلیت موجود |
+|:---|:---|
+| ⚡ روند کار | ارائه رابط مدیریت توسط خود Worker |
+| 🔌 اتصال | تنظیمات و مسیرهای API مبتنی بر KV |
+| ⚡ روند کار | تولید تنظیمات اشتراک |
+| 🔌 اتصال | پردازش WebSocket با cloudflare:sockets |
+
+<a id="پشته-فنی"></a>
+
+## 🧰 پشته فنی
 
 | ابزار | نسخه یا منبع |
 |---|---|
 | Node.js | `package.json` |
 
-## شروع کار
+<a id="شروع-کار"></a>
+
+## 🚀 شروع کار
 
 Node.js 22.12 یا بالاتر و مدیر پکیج مشخص‌شده در package.json. نسخه وابستگی‌ها را مطابق فایل قفل نصب کنید.
+
+<div dir="ltr">
 
 ```bash
 git clone https://github.com/MOHAMMADREZAABEDINPOOR/PIMX_PASS_PANEL.git
@@ -39,17 +59,25 @@ npm install
 npm run dev
 ```
 
-## تنظیمات
+</div>
+
+<a id="تنظیمات"></a>
+
+## ⚙️ تنظیمات
 
 فایل محیط استاندارد تعریف نشده است. برای تمرین‌های مستقل تنظیم خارجی لازم نیست؛ اگر در کد ثابت‌های سرویس یا مسیر وجود دارد، آن‌ها را پیش از اجرا بررسی کنید.
 
 اتصال‌های میزبانی: `PIMXPASS_KV`.
 
-## استفاده
+<a id="استفاده"></a>
+
+## 🎯 استفاده
 
 فضای KV اختصاصی با نام اتصال `PIMXPASS_KV` بسازید، شناسه‌ها را در wrangler.toml عوض و Worker محلی را اجرا کنید. پیش از استقرار تنظیمات و کنترل دسترسی را بررسی کنید.
 
-## ساختار پروژه
+<a id="ساختار-پروژه"></a>
+
+## 🗂️ ساختار پروژه
 
 | مسیر | نقش |
 |---|---|
@@ -59,30 +87,49 @@ npm run dev
 | [`package.json`](package.json) | فایل ورودی یا تنظیم پروژه |
 | [`wrangler.toml`](wrangler.toml) | فایل ورودی یا تنظیم پروژه |
 
-## فرمان‌ها و بررسی
+<a id="فرمان‌ها-و-بررسی"></a>
+
+## 🧪 فرمان‌ها و بررسی
+
+| فرمان | کاربرد |
+|:---|:---|
+| `npm run dev` | 🧑‍💻 سرور توسعه |
+| `npm run start` | ▶️ سرور برنامه |
+
+<div dir="ltr">
 
 ```bash
 npm run dev
 npm run start
 ```
 
+</div>
+
 این‌ها فرمان‌های موجود در package.json هستند؛ فهرست بالا گزارش اجرای آزمون نیست. فرمان تست ممکن است مرورگر، سرویس یا دیتابیس آماده بخواهد.
 
-## استقرار
+<a id="استقرار"></a>
+
+## 🌍 استقرار
 
 اتصال KV را با شناسه منبع خودتان تنظیم و اسرار را با Wrangler secret ذخیره کنید. Worker را مستقر و در ربات وب‌هوک HTTPS را ثبت کنید. شناسه موجود در تنظیم مخزن را منبع خود فرض نکنید.
 
-## محدودیت‌ها
+<a id="محدودیت‌ها"></a>
+
+## 📌 محدودیت‌ها
 
 این نسخه نمونه پراکسی و مدیریت است و محدودیت سوکت Cloudflare را دارد. ظاهر پنل به معنی راه‌اندازی سرور WireGuard یا OpenVPN نیست.
 
-## رفع مشکل
+<a id="رفع-مشکل"></a>
+
+## 🛠️ رفع مشکل
 
 - پکیج غایب: وابستگی را با مدیر پکیج پروژه نصب کنید.
 - خطای API یا شبکه: آدرس، سرویس و اتصال میزبانی را بررسی کنید.
 - فایل قدیمی: در صورت وجود اسکریپت ساخت، build و کش مرورگر را تازه کنید.
 
-## مشارکت
+<a id="مشارکت"></a>
+
+## 🤝 مشارکت
 
 برای تغییر، شاخه مستقل بسازید، رفتار فعلی را بررسی کنید و توضیح روشن همراه تغییر بفرستید. اطلاعات خصوصی، خروجی build و دیتابیس محلی را commit نکنید.
 
@@ -90,10 +137,22 @@ npm run start
 
 - [DEPLOY_GUIDE.md](DEPLOY_GUIDE.md)
 
-## مجوز
+<a id="مجوز"></a>
+
+## 📄 مجوز
 
 فایل مجوز در این نسخه موجود نیست. نمایش عمومی کد به‌تنهایی مجوز استفاده مجدد نیست؛ برای شرایط استفاده با مالک مخزن هماهنگ کنید.
 
 ---
 
 ساخته‌شده در مجموعه **PIMX** · مستندات فارسی و انگلیسی.
+
+---
+
+<div align="center">
+
+🛡️ **PIMX PASS PANEL** · [English](README.md) · [فارسی](README.fa.md)
+
+</div>
+
+</div>
